@@ -1,7 +1,7 @@
-// Video Link Finder — content script (gira in tutti i frame)
-// 1. trova i <video> nel frame e li segnala al background
-// 2. mostra il pulsante "Link" quando passi sopra un video (stile Maximize Video)
-// 3. nel frame principale apre il pannello laterale a destra
+// Video Link Finder — content script (runs in every frame)
+// 1. finds the <video> elements in the frame and reports them to the background
+// 2. shows a "Link" button when hovering a video
+// 3. in the top frame, opens the side panel on the right
 
 (() => {
   if (window.__vlfLoaded) return;
@@ -17,16 +17,16 @@
     try {
       chrome.runtime.sendMessage(msg).catch(() => {});
     } catch {
-      // estensione ricaricata: questo script è orfano, ignora
+      // extension reloaded: this script is orphaned, ignore
     }
   }
 
-  // --- scansione ------------------------------------------------------------
+  // --- scanning -------------------------------------------------------------
 
   function findVideos() {
     const list = [...document.querySelectorAll('video')];
     if (!list.length && document.body) {
-      // alcuni player stanno dentro web component (shadow DOM aperto)
+      // some players live inside web components (open shadow DOM)
       for (const el of document.body.querySelectorAll('*')) {
         if (el.shadowRoot) list.push(...el.shadowRoot.querySelectorAll('video'));
       }
@@ -60,7 +60,7 @@
   for (const ev of ['loadedmetadata', 'play', 'emptied']) document.addEventListener(ev, scanSoon, true);
   setInterval(scan, 5000);
 
-  // --- pulsante sopra il video -------------------------------------------
+  // --- hover button on videos -------------------------------------------
 
   let host, btn, hideT;
 
@@ -78,7 +78,7 @@
         button:hover{background:#e10600;border-color:#e10600}
         svg{width:13px;height:13px}
       </style>
-      <button title="Video Link Finder: mostra link player / stream">
+      <button title="Video Link Finder: show player / stream links">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
           <path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5"/>
           <path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5"/>
@@ -152,7 +152,7 @@
     { passive: true, capture: true }
   );
 
-  // --- pannello laterale (solo frame principale) ---------------------------
+  // --- side panel (top frame only) ---------------------------------------
 
   if (!isTop) return;
 

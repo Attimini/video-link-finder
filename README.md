@@ -2,6 +2,8 @@
 
 Chrome extension that finds the real link behind any embedded video: the **player URL** (the iframe) and the **stream URL** (`.m3u8` / `.mpd` / `.mp4`), so you can open the player alone in a new tab or play the stream in a clean page.
 
+<p align="center"><img src="docs/panel.png" alt="Video Link Finder panel" width="420"></p>
+
 ## Features
 
 - **Hover button**: move the mouse over a video and a **🔗 Link** button appears; click it to open the side panel.
@@ -16,7 +18,7 @@ Chrome extension that finds the real link behind any embedded video: the **playe
 
 ## Installation
 
-1. Download this repository (**Code → Download ZIP**) and unzip it, or `git clone` it.
+1. Download this repository (**Releases** → latest `.zip`, or **Code → Download ZIP**) and unzip it, or `git clone` it.
 2. Open `chrome://extensions` and turn on **Developer mode**.
 3. Click **Load unpacked** and select the `video-link-finder` folder.
 4. Reload the pages that were already open.

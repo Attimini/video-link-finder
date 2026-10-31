@@ -1,7 +1,7 @@
 // Video Link Finder — service worker
-// Raccoglie per ogni scheda: player (iframe che contengono un <video>),
-// stream (m3u8 / mpd) e file video diretti. Lo stato vive in storage.session
-// così sopravvive al riavvio del service worker e il pannello si aggiorna da solo.
+// Collects per tab: players (iframes containing a <video>), streams (m3u8 / mpd)
+// and direct video files. State lives in storage.session so it survives service
+// worker restarts and the panel updates itself.
 
 const STREAM_RE = /\.(m3u8|mpd)(?:[?#;]|$)/i;
 const FILE_RE = /\.(mp4|webm|mkv|mov|m4v)(?:[?#;]|$)/i;
@@ -12,7 +12,7 @@ const MAX_PER_BUCKET = 40;
 const empty = (page = '') => ({ page, players: {}, streams: {}, files: {} });
 const skey = (tabId) => 'tab' + tabId;
 
-// --- stato per scheda ------------------------------------------------------
+// --- per-tab state ----------------------------------------------------------
 
 const loading = new Map(); // tabId -> Promise<data>
 const timers = new Map();
@@ -52,7 +52,7 @@ function updateBadge(tabId, d) {
   chrome.action.setBadgeBackgroundColor({ tabId, color: '#e10600' }).catch(() => {});
 }
 
-// stessa risorsa con token diversi nella query = una sola voce (tengo l'ultima)
+// same resource with different query tokens = one entry (keep the latest)
 function urlKey(u) {
   try {
     const x = new URL(u);
@@ -78,7 +78,7 @@ async function getFrame(tabId, frameId) {
   }
 }
 
-// URL del documento che ha fatto la richiesta = Referer da riusare
+// URL of the document that made the request = Referer to reuse
 async function refererFor(d, data) {
   if (d.frameId >= 0) {
     const f = await getFrame(d.tabId, d.frameId);
@@ -88,7 +88,7 @@ async function refererFor(d, data) {
   return data.page;
 }
 
-// --- rete: stream e file video --------------------------------------------
+// --- network: streams and video files----------------------------------------
 
 function fromExtension(d) {
   return d.initiator && d.initiator.startsWith('chrome-extension://');
@@ -116,7 +116,7 @@ chrome.webRequest.onBeforeRequest.addListener(
   { urls: ['<all_urls>'], types: ['xmlhttprequest', 'media', 'other'] }
 );
 
-// stream senza estensione nell'URL: li riconosco dal Content-Type
+// streams without an extension in the URL: detect them by Content-Type
 chrome.webRequest.onHeadersReceived.addListener(
   (d) => {
     if (d.tabId < 0 || fromExtension(d) || STREAM_RE.test(d.url)) return;
@@ -128,7 +128,7 @@ chrome.webRequest.onHeadersReceived.addListener(
   ['responseHeaders']
 );
 
-// nuova pagina nella scheda → si riparte da zero (le SPA non passano di qui)
+// new page in the tab → start over (SPA navigations don't fire this)
 chrome.webNavigation.onCommitted.addListener((d) => {
   if (d.frameId === 0 && !d.url.startsWith(chrome.runtime.getURL(''))) reset(d.tabId, d.url);
 });
@@ -139,10 +139,10 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds: [tabId] }).catch(() => {});
 });
 
-// --- player: frame che contengono un <video> -------------------------------
+// --- players: frames that contain a <video> --------------------------------
 
-// Risale dal frame del video al primo frame con un URL http(s) vero
-// (gli iframe about:blank / srcdoc non si possono aprire da soli).
+// Walks up from the video's frame to the first frame with a real http(s) URL
+// (about:blank / srcdoc iframes can't be opened on their own).
 async function playerFrame(tabId, frameId, frameUrl) {
   let fid = frameId;
   let url = frameUrl;
@@ -152,7 +152,7 @@ async function playerFrame(tabId, frameId, frameUrl) {
     fid = f.parentFrameId;
     url = (await getFrame(tabId, fid))?.url || '';
   }
-  if (fid <= 0) return null; // il video sta direttamente nella pagina
+  if (fid <= 0) return null; // the video is directly in the page
   const f = await getFrame(tabId, fid);
   const parent = f ? await getFrame(tabId, f.parentFrameId) : null;
   return { url, referer: parent?.url || '', nested: (f?.parentFrameId ?? 0) > 0 };
@@ -187,7 +187,7 @@ async function onFrameVideo(msg, sender) {
   if (changed || msg.isTop) save(tabId, data);
 }
 
-// --- Referer: per aprire player / stream fuori dal sito originale ---------
+// --- Referer: to open players / streams outside the original site ---------
 
 const ALL_TYPES = ['main_frame', 'sub_frame', 'xmlhttprequest', 'media', 'other', 'script', 'image', 'stylesheet', 'font', 'websocket'];
 
@@ -196,11 +196,11 @@ async function setRefererRule(tabId, referer, mode) {
   const requestHeaders = [{ header: 'referer', operation: 'set', value: referer }];
   let resourceTypes;
   if (mode === 'player') {
-    // pagina del player isolato: solo la navigazione deve sembrare "embeddata";
-    // le richieste interne del player usano il loro Referer naturale
+    // standalone player page: only the navigation must look embedded;
+    // the player's own requests keep their natural Referer
     resourceTypes = ['main_frame'];
   } else {
-    // riproduttore interno: tutte le richieste dello stream come dal sito d'origine
+    // built-in player: all stream requests look like they come from the original site
     resourceTypes = ['xmlhttprequest', 'media', 'other'];
     requestHeaders.push({ header: 'origin', operation: 'set', value: new URL(referer).origin });
   }
@@ -223,7 +223,7 @@ async function openPlayerTab(url, referer, openerTabId) {
   await chrome.tabs.update(tab.id, { url });
 }
 
-// --- messaggi --------------------------------------------------------------
+// --- messages --------------------------------------------------------------
 
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   switch (msg?.type) {
@@ -240,7 +240,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       openPlayerTab(msg.url, msg.referer, msg.tabId).then(() => reply(true), () => reply(false));
       return true;
     case 'prepareStream':
-      // inviato da player.html prima di caricare lo stream
+      // sent by player.html before loading the stream
       setRefererRule(sender.tab.id, msg.referer, 'stream').then(() => reply(true), () => reply(false));
       return true;
     case 'clear':

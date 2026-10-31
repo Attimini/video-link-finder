@@ -1,4 +1,4 @@
-// Pannello: usato sia come popup dell'icona sia come pannello laterale nella pagina
+// Panel: used both as the toolbar popup and as the in-page side panel
 const params = new URLSearchParams(location.search);
 const embed = params.has('embed');
 let tabId = Number(params.get('tab')) || null;
@@ -31,7 +31,7 @@ async function copy(text, button) {
     ta.remove();
   }
   const old = button.textContent;
-  button.textContent = 'Copiato ✓';
+  button.textContent = 'Copied ✓';
   button.classList.add('ok');
   setTimeout(() => {
     button.textContent = old;
@@ -67,18 +67,18 @@ function card(it, kind) {
   url.title = it.url;
   c.append(url);
 
-  if (kind === 'PLAYER' && it.nested) c.append(el('div', 'note', 'Iframe annidato: se non parte, prova lo stream qui sotto.'));
+  if (kind === 'PLAYER' && it.nested) c.append(el('div', 'note', 'Nested iframe: if it does not load, try the stream below.'));
 
   const b = el('div', 'btns');
-  b.append(btn('Copia', (x) => copy(it.url, x), 'primary'));
+  b.append(btn('Copy', (x) => copy(it.url, x), 'primary'));
   if (kind === 'PLAYER') {
-    b.append(btn('Apri in scheda', () => chrome.runtime.sendMessage({ type: 'openPlayer', url: it.url, referer: it.referer, tabId })));
+    b.append(btn('Open in tab', () => chrome.runtime.sendMessage({ type: 'openPlayer', url: it.url, referer: it.referer, tabId })));
   } else if (kind === 'DASH') {
-    b.append(btn('Apri', () => chrome.tabs.create({ url: it.url })));
+    b.append(btn('Open', () => chrome.tabs.create({ url: it.url })));
   } else {
-    b.append(btn('Riproduci', () => playInternal(it, kind)));
+    b.append(btn('Play', () => playInternal(it, kind)));
   }
-  if (kind !== 'PLAYER') b.append(btn('Copia yt-dlp', (x) => copy(ytdlp(it), x)));
+  if (kind !== 'PLAYER') b.append(btn('Copy yt-dlp', (x) => copy(ytdlp(it), x)));
   c.append(b);
   return c;
 }
@@ -111,12 +111,12 @@ async function render(d) {
 
   if (!total) {
     const e = el('div', 'empty');
-    e.append(el('b', null, 'Nessun video trovato'));
+    e.append(el('b', null, 'No video found'));
     e.append(
       document.createTextNode(
         d?.topVideo
-          ? 'Il video è direttamente nella pagina ma usa uno stream protetto (blob). Avvia la riproduzione: lo stream comparirà qui.'
-          : "Avvia il video e attendi qualche secondo. Se la pagina era già aperta prima di installare l'estensione, ricaricala."
+          ? 'The video is in the page itself but uses a blob stream. Start playback and the stream will show up here.'
+          : 'Start the video and wait a few seconds. If the page was open before the extension was installed, reload it.'
       )
     );
     list.append(e);
@@ -126,7 +126,7 @@ async function render(d) {
   const parts = [
     section('Player (iframe)', players, () => 'PLAYER'),
     section('Stream', streams, (s) => s.kind),
-    section('File video', files, () => 'FILE'),
+    section('Video files', files, () => 'FILE'),
   ];
   for (const p of parts) if (p) list.append(p);
 }

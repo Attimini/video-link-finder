@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Video Link Finder",
   "version": "1.0.0",
-  "description": "Trova il link del player (iframe) e dello stream (m3u8/mpd/mp4) dei video nella pagina.",
+  "description": "Finds the real player (iframe) and stream (m3u8/mpd/mp4) links behind embedded videos.",
   "permissions": [
     "webRequest",
     "webNavigation",
