@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <title>Player · Video Link Finder</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #000; color: #e8eaee; font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; }
+    body { display: flex; flex-direction: column; }
+    .bar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: #14161b; border-bottom: 1px solid #2c313b; }
+    .bar code { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #b9c0cc; font: 11px ui-monospace, Consolas, monospace; }
+    .bar button { font: 600 11.5px system-ui, sans-serif; color: #fff; background: #e10600; border: 0; border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+    #msg { color: #f59e0b; }
+    video { flex: 1; width: 100%; min-height: 0; background: #000; }
+  </style>
+</head>
+<body>
+  <div class="bar"><code id="src"></code><span id="msg"></span><button id="copy">Copia link</button></div>
+  <video id="v" controls autoplay playsinline></video>
+  <script src="lib/hls.min.js"></script>
+  <script src="player.js"></script>
+</body>
+</html>
